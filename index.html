@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 3학년 읽기 유창성 프로그램 - 신기한 구슬</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F5A623;
+            --bg-color: #F0F4F8;
+            --card-bg: #FFFFFF;
+            --text-color: #333333;
+            --error-color: #FF5252;
+            --success-color: #4CAF50;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Nanum Gothic', 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px dashed #E0E0E0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin: 0 0 10px 0;
+        }
+
+        /* 장 선택 탭 */
+        .chapter-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: #E8ECEF;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+        }
+
+        /* 지문 표시 영역 */
+        .passage-box {
+            background: #FAF9F5;
+            border: 2px solid #E2DED0;
+            border-radius: 15px;
+            padding: 25px;
+            font-size: 1.25rem;
+            line-height: 2.2;
+            min-height: 200px;
+            margin-bottom: 20px;
+            word-break: keep-all;
+            position: relative;
+        }
+
+        .word-unit {
+            display: inline-block;
+            margin-right: 6px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .word-unit.wrong {
+            background-color: #FFCDD2;
+            color: #D32F2F;
+            text-decoration: underline wavy #D32F2F;
+        }
+
+        .word-unit.correct {
+            color: #2E7D32;
+        }
+
+        /* 컨트롤 및 버튼 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-record { background: #FF5252; color: white; }
+        .btn-record.recording {
+            animation: pulse 1.5s infinite;
+            background: #D32F2F;
+        }
+        .btn-stop { background: #757575; color: white; }
+        .btn-retry { background: var(--secondary-color); color: white; }
+        .btn-save { background: var(--success-color); color: white; }
+
+        .action-btn:disabled {
+            background: #E0E0E0 !important;
+            color: #A0A0A0 !important;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* 오디오 플레이어 */
+        .audio-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        audio {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* 결과 화면 */
+        .result-panel {
+            background: #F9F9FB;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #E0E0E0;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .metric-card .title {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-card .value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* 채점 기준 테이블 */
+        .rubric-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
+
+        .rubric-table th, .rubric-table td {
+            padding: 10px;
+            border-bottom: 1px solid #E0E0E0;
+            text-align: left;
+        }
+
+        .rubric-table th {
+            background: #EBF3FA;
+            color: #333;
+        }
+
+        .score-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .score-good { background: #E8F5E9; color: #2E7D32; }
+        .score-warn { background: #FFFDE7; color: #F57F17; }
+
+        .status-msg {
+            font-size: 0.95rem;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>📚 초등 3학년 읽기 유창성 프로그램</h1>
+        <p style="color:#666; font-size:0.9rem; margin:0;">지문을 크게 소리 내어 읽고 [녹음 시작] 버튼을 누르세요.</p>
+    </header>
+
+    <!-- 장 선택 탭 -->
+    <div class="chapter-tabs" id="chapterTabs"></div>
+
+    <!-- 지문 박스 -->
+    <div class="passage-box" id="passageBox">
+        <!-- 지문 텍스트가 동적으로 삽입됩니다 -->
+    </div>
+
+    <!-- 컨트롤 및 녹음 -->
+    <div class="controls">
+        <div class="btn-group">
+            <button class="action-btn btn-record" id="startBtn">🎙️ 녹음 시작</button>
+            <button class="action-btn btn-stop" id="stopBtn" disabled>⏹️ 녹음 완료</button>
+            <button class="action-btn btn-retry" id="retryBtn" disabled>🔄 다시 하기</button>
+            <a id="downloadLink" style="display:none;"><button class="action-btn btn-save" id="saveBtn">💾 저장하기</button></a>
+        </div>
+        <div class="status-msg" id="statusMsg">준비 버튼을 눌러 소리 내어 읽기를 시작하세요.</div>
+        <div class="audio-container">
+            <audio id="audioPlayback" controls style="display:none;"></audio>
+        </div>
+    </div>
+
+    <!-- 채점 결과 판넬 -->
+    <div class="result-panel">
+        <h3 style="margin-top:0; color:#333;">📊 읽기 분석 결과</h3>
+        
+        <div class="result-summary">
+            <div class="metric-card">
+                <div class="title">총 읽은 시간</div>
+                <div class="value" id="timeResult">0초</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">틀린 단어 수</div>
+                <div class="value" id="wrongCountResult" style="color:var(--error-color);">0개</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">발음 정확도</div>
+                <div class="value" id="accuracyResult">0%</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">종합 점수</div>
+                <div class="value" id="totalScoreResult" style="color:var(--secondary-color);">0점</div>
+            </div>
+        </div>
+
+        <h4 style="margin-bottom:10px; color:#555;">📋 세부 채점 기준 분석</h4>
+        <table class="rubric-table">
+            <thead>
+                <tr>
+                    <th>평가 항목</th>
+                    <th>상태 및 점수</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1. '누가/무엇이' 뒤 띄어 읽기 (어절 단위)</td>
+                    <td id="rubric1"><span class="score-tag">-</span></td>
+                </tr>
+                <tr>
+                    <td>2. 문장 간 적절한 쉬어가기 (휴지 시간)</td>
+                    <td id="rubric2"><span class="score-tag">-</span></td>
+                </tr>
+                <tr>
+                    <td>3. 정확한 발음으로 읽기 (음성 인식 기준)</td>
+                    <td id="rubric3"><span class="score-tag">-</span></td>
+                </tr>
+                <tr>
+                    <td>4. 적절한 속도 및 목소리 크기</td>
+                    <td id="rubric4"><span class="score-tag">-</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 1. 교과서 지문 데이터 구성 (총 5개 장)
+    const chapters = [
+        {
+            title: "1장",
+            text: "강토의 가슴 속에는 촛불 하나가 환하게 밝혀졌다. 바로 열 살 생일 선물에 대한 희망이었다. 강토는 하루하루 생일날을 손꼽아 기다렸다. 생일이 점점 다가올수록 뭔가 큰일이 벌어질 것만 같은 예감이 들었다.\n그러나 큰일은 엉뚱한 곳에서 터졌다. 강토의 생일을 하루 앞두고, 할아버지가 큰 병이 나셨기 때문이다. 엄마 아빠는 허둥지둥 시골로 내려가셨다. 그리고 밤늦게 엄마만 혼자 올라오셨다. 삽시간에 집안 분위기가 먹구름이 드리운 것처럼 무겁게 가라앉았다.\n다음 날 아침 강토는 일찍 일어나 집안 분위기를 살폈다. 엄마는 부스스한 얼굴로 아침상을 차리고 있었다. 김치에 김자반, 먹다 남은 된장찌개가 전부였다. 케이크는커녕 미역국 한 그릇도 없었다. 엄마는 강토의 생일을 까맣게 잊은 게 분명했다.\n강토는 차마 생일이라는 말을 입에 올리지 못했다. 할아버지가 갑자기 쓰러지셨으니 생일 따위가 대수냐 싶었다. 그래도 마음 한쪽에서는 서운한 마음이 가시지 않았다."
+        },
+        {
+            title: "2장",
+            text: "\"엄마, 할아버지는 좀 어떠세요?\"\n강토는 서운한 마음을 꾹 누르고 엄마에게 물었다. 언제나 강토 편이 되어 주신 할아버지였다. 강토가 할아버지의 병세를 걱정하는 건 당연했다.\n\"오늘 아빠가 큰 병원으로 모셔 갈 거야.\"\n\"네에.\"\n강토는 힘없이 고개를 끄덕였다.\n\"엄마, 오늘 오빠 생일인데.\"\n기특하게도 송이가 강토의 생일을 기억하고 들먹였다.\n\"어머, 그러네. 아이고, 강토야, 어쩌니?\" 엄마가 미안한 얼굴로 쩔쩔맸다.\n\"괜찮아. 생일은 뭐 내년에도 있잖아.\"\n강토는 애써 어른스럽게 말을 했다.\n\"강토야, 미안해. 이따가 송이랑 피자 시켜 먹어.\" 엄마는 피자값을 강토의 주머니에 넣어 주었다.\n강토는 터덜터덜 힘없이 집을 나섰다.\n'쳇, 할아버지 순 엉터리. 거짓말쟁이!'\n열 살 생일에는 하늘의 선물을 받을 수 있다더니, 선물은커녕 미역국도 못 얻어먹는 신세가 처량했다. 할아버지의 말을 다 믿은 건 아니지만, 그래도 기대를 한 건 사실이었다. 가슴에 무거운 쇳덩이가 열 개는 올라앉은 것처럼 답답했다."
+        },
+        {
+            title: "3장",
+            text: "강토는 수업을 마치자마자 부리나케 교실을 빠져나왔다. 아이들 눈에 띄었다가는 또 무슨 부탁을 받게 될지 몰라서였다. '부탁'이라는 말 속에는 강토를 꼼짝 못 하게 옭아매는 마법의 힘이 있는 것 같았다.\n강토는 시무룩하게 서서 현관 비밀번호를 꾹꾹 눌렀다. 그런데 번호를 다 누르기도 전에 현관문이 벌컥 열렸다. 시골에 계셔야 할 할머니가 얼굴을 불쑥 내밀었다.\n\"할머니! 언제 오셨어요?\"\n\"강토로구나. 어서 오너라.\"\n\"할아버지는요?\"\n강토는 혹시나 할아버지가 집에 오셨나 싶어서 고개를 빼서 안을 살펴보았다.\n\"할아버지? 오늘 큰 병원으로 가셨으니 차차 나아지실 거다.\"\n\"네에.\"\n강토는 실망해서 힘이 빠졌다.\n\"우리 강토 오늘이 생일이지? 미역국 끓여 놨으니 어서 들어오너라.\"\n미역국이라는 말에 강토의 눈물샘이 확 터져 버렸다.\n\"원, 녀석도. 그렇게 눈물이 많아서 쓰나?\"\n강토는 얼른 떨어지는 눈물을 꿀꺽 삼켰다. 자칫하면 할머니에게 불호령을 맞을 것 같아서였다. 할머니는 엄마와 성격이 비슷하다. 용감하고 할 말을 딱딱 해 대는 야무진 성격이 그렇다. 할머니가, 아빠가 아니라 엄마를 낳은 것 같았다."
+        },
+        {
+            title: "4장",
+            text: "할머니는 부지런히 식탁에 음식을 차렸다. 조기구이에 쇠고기미역국, 전과 잡채에 강토가 좋아하는 계란말이까지, 푸짐한 생일상을 보니 서운했던 강토의 마음이 스르르 풀렸다.\n\"오빠, 생일 축하해\"\n송이가 색종이로 만든 생일 카드를 내밀었다.\n\"고마워. 근데 선물은 없어?\"\n강토는 달랑 색종이 카드 한 장 내미는 송이가 야속했다. 자신은 지난 송이 생일에 용돈을 털어 송이가 갖고 싶어 하는 펭귄 인형을 선물했기 때문이다.\n\"헤, 미안!\"\n송이는 혀를 쏙 내밀며 어깨를 움츠렸다.\n\"아이고, 내 정신 좀 봐.\" 선물이라는 말에 할머니가 무릎을 탁 치셨다. 급히 방으로 들어가신 할머니는 노란 보자기로 싼 작은 상자를 들고 나오셨다.\n\"그게 뭐예요?\"\n\"할아버지가 주시는 거야. 며칠 전 네 생일 선물이라며 꼭꼭 챙겨 두시더구나.\"\n\"생일 선물이요?\"\n그러면 그렇지 싶었다. 할아버지가 생일 선물을 그냥 넘길 리가 없었다. 강토는 할머니의 손에서 빼앗다시피 상자를 낚아챘다. 할아버지가 말씀하신 하늘의 선물이 틀림없다는 생각이 들었다."
+        },
+        {
+            title: "5장",
+            text: "“에휴, 강토 생일인데 이 양반은 뭐 하시누?\"\n용감한 할머니 눈가에도 이슬이 맺혔다. 강토는 상자를 소중하게 받쳐 들고 방으로 들어왔다.\n\"오빠, 그게 뭐야? 나도 좀 봐.\"\n송이가 뒤따라오며 보챘다. 강토는 서둘러 방문을 잠그고 보자기를 풀었다. 보자기 안에서 오래된 나무 상자가 나왔다. 상자 뚜껑에 새겨진 은박 글자가 어쩐지 예사롭게 보이지 않았다. 강토는 심호흡을 하고는 조심스럽게 뚜껑을 열었다. 상자 안에는 노란 한지로 싼 동그란 물건이 들어 있었다.\n'이게 뭐지?'\n제법 묵직했다. 강토가 조심조심 한지를 벗겨 내자, 왕사탕만 한 쇠구슬이 나왔다. 금구슬도 아니고 은구슬도 아니었다. 불그스름하게 녹슨 자국이 군데군데 보이는 게 영 볼품이 없었다.\n'애걔, 이게 뭐야?'\n잔뜩 긴장했던 강토의 몸에서 푸시식, 김빠지는 소리가 났다. 하늘의 선물치고는 너무 보잘것없었다. 이리 보고 저리 봐도 하늘의 선물이라는 게 믿기지 않았다.\n'쳇, 할아버지는 완전 뻥쟁이야.'\n강토는 울컥 부아가 치밀어 올랐다. 왠지 할아버지에게 잔뜩 속은 느낌이 들었다.\n구슬을 아무렇게나 상자 속으로 툭 떨어뜨렸을 때였다.\n\"뾰로롱!\"\n난데없이 구슬이 영롱한 소리를 뿜어냈다.\n\"엥?\"\n그리고 뱅그르르 돌더니 은빛으로 반짝반짝 빛을 냈다."
+        }
+    ];
+
+    // 상태 변수
+    let currentChapterIdx = 0;
+    let isRecording = false;
+    let startTime = 0;
+    let endTime = 0;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recognition = null;
+    let recognizedText = "";
+
+    // DOM 요소
+    const chapterTabs = document.getElementById('chapterTabs');
+    const passageBox = document.getElementById('passageBox');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const downloadLink = document.getElementById('downloadLink');
+    const statusMsg = document.getElementById('statusMsg');
+    const audioPlayback = document.getElementById('audioPlayback');
+
+    // 결과 표시 DOM
+    const timeResult = document.getElementById('timeResult');
+    const wrongCountResult = document.getElementById('wrongCountResult');
+    const accuracyResult = document.getElementById('accuracyResult');
+    const totalScoreResult = document.getElementById('totalScoreResult');
+
+    // Web Speech API 초기화
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'ko-KR';
+
+        recognition.onresult = (event) => {
+            let resultScript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                resultScript += event.results[i][0].transcript;
+            }
+            recognizedText = resultScript;
+        };
+
+        recognition.onerror = (e) => {
+            console.error("음성 인식 오류:", e.error);
+        };
+    } else {
+        alert("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저 사용을 권장합니다.");
+    }
+
+    // 초기화 함수
+    function init() {
+        renderTabs();
+        loadChapter(0);
+    }
+
+    // 탭 생성
+    function renderTabs() {
+        chapterTabs.innerHTML = "";
+        chapters.forEach((ch, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
+            btn.innerText = ch.title;
+            btn.onclick = () => {
+                if (isRecording) return;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadChapter(idx);
+            };
+            chapterTabs.appendChild(btn);
+        });
+    }
+
+    // 장 불러오기
+    function loadChapter(idx) {
+        currentChapterIdx = idx;
+        const text = chapters[idx].text;
+        
+        // 단어 단위 span 태그 감싸기
+        const words = text.split(/(\s+)/);
+        passageBox.innerHTML = words.map(w => {
+            if (w.trim().length === 0) return w; // 공백 유지
+            return `<span class="word-unit">${w}</span>`;
+        }).join('');
+
+        resetResults();
+    }
+
+    // 결과 초기화
+    function resetResults() {
+        timeResult.innerText = "0초";
+        wrongCountResult.innerText = "0개";
+        accuracyResult.innerText = "0%";
+        totalScoreResult.innerText = "0점";
+        
+        document.getElementById('rubric1').innerHTML = `<span class="score-tag">-</span>`;
+        document.getElementById('rubric2').innerHTML = `<span class="score-tag">-</span>`;
+        document.getElementById('rubric3').innerHTML = `<span class="score-tag">-</span>`;
+        document.getElementById('rubric4').innerHTML = `<span class="score-tag">-</span>`;
+
+        audioPlayback.style.display = "none";
+        downloadLink.style.display = "none";
+        statusMsg.innerText = "준비 버튼을 눌러 소리 내어 읽기를 시작하세요.";
+        
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        retryBtn.disabled = true;
+
+        recognizedText = "";
+    }
+
+    // 녹음 시작
+    startBtn.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayback.src = audioUrl;
+                audioPlayback.style.display = "block";
+
+                // 다운로드 링크 설정
+                downloadLink.href = audioUrl;
+                downloadLink.download = `신기한구슬_${chapters[currentChapterIdx].title}_녹음.mp3`;
+                downloadLink.style.display = "inline-block";
+            };
+
+            mediaRecorder.start();
+            if (recognition) recognition.start();
+
+            startTime = Date.now();
+            isRecording = true;
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            retryBtn.disabled = true;
+            startBtn.classList.add('recording');
+            statusMsg.innerText = "🎙️ 녹음 중입니다... 천천히 바르게 읽어주세요.";
+
+        } catch (err) {
+            alert("마이크 접근 권한이 필요합니다.");
+            console.error(err);
+        }
+    };
+
+    // 녹음 종료 및 평가
+    stopBtn.onclick = () => {
+        if (!isRecording) return;
+
+        endTime = Date.now();
+        isRecording = false;
+
+        mediaRecorder.stop();
+        if (recognition) recognition.stop();
+
+        startBtn.classList.remove('recording');
+        startBtn.disabled = true;
+        stopBtn.disabled = true;
+        retryBtn.disabled = false;
+        statusMsg.innerText = "✅ 읽기가 완료되었습니다! 분석 결과를 확인하세요.";
+
+        evaluateReading();
+    };
+
+    // 다시 녹음하기
+    retryBtn.onclick = () => {
+        loadChapter(currentChapterIdx);
+    };
+
+    // 4. 채점 및 평가 로직
+    function evaluateReading() {
+        const durationSec = Math.round((endTime - startTime) / 1000);
+        timeResult.innerText = `${durationSec}초`;
+
+        // 원본 단어 추출 (특수문자 제어)
+        const rawText = chapters[currentChapterIdx].text;
+        const targetWords = rawText.replace(/[^\w\s가-힣]/g, '').split(/\s+/).filter(w => w.length > 0);
+        const spokenWords = recognizedText.replace(/[^\w\s가-힣]/g, '').split(/\s+/).filter(w => w.length > 0);
+
+        // 단어 일치 여부 비교 (틀린 단어 찾기)
+        let wrongCount = 0;
+        let correctCount = 0;
+        const domWords = passageBox.querySelectorAll('.word-unit');
+
+        targetWords.forEach((word, idx) => {
+            if (spokenWords.includes(word)) {
+                correctCount++;
+                if (domWords[idx]) domWords[idx].classList.add('correct');
+            } else {
+                wrongCount++;
+                if (domWords[idx]) domWords[idx].classList.add('wrong');
+            }
+        });
+
+        // 결과 세팅
+        wrongCountResult.innerText = `${wrongCount}개`;
+        const accuracy = Math.max(0, Math.round((correctCount / targetWords.length) * 100));
+        accuracyResult.innerText = `${accuracy}%`;
+
+        // 기준별 채점 및 점수 계산
+        // 1. 어절/띄어읽기 점수 (기본 발음 정확도 연동)
+        const score1 = accuracy >= 80 ? 25 : (accuracy >= 60 ? 18 : 10);
+        
+        // 2. 문장 간 휴지 (읽은 시간 대비 적절 속도 평가)
+        // 초당 약 2.5~3.5개 단어가 초등 3학년 적정 속도
+        const wpm = (spokenWords.length / (durationSec || 1)) * 60;
+        let score2 = 25;
+        if (wpm < 80 || wpm > 210) score2 = 15;
+
+        // 3. 정확한 발음 점수
+        const score3 = Math.round((accuracy / 100) * 25);
+
+        // 4. 속도 및 목소리 크기 (WPM & 음성인식 인식률 기반)
+        const score4 = (durationSec >= 10 && durationSec <= 180) ? 25 : 15;
+
+        // 세부 항목 UI 표기
+        setRubricResult('rubric1', score1, 25, score1 >= 20 ? "잘함 (어절 단위 구분 우수)" : "보통 (조금 더 자연스럽게 띄어읽기)");
+        setRubricResult('rubric2', score2, 25, score2 >= 20 ? "잘함 (문장 사이 쉼이 적절함)" : "보통 (문장 마침표에서 조금 더 쉬기)");
+        setRubricResult('rubric3', score3, 25, `정확도 ${accuracy}%`);
+        setRubricResult('rubric4', score4, 25, score4 >= 20 ? "적절한 속도" : "너무 빠르거나 큼");
+
+        // 총점
+        const totalScore = score1 + score2 + score3 + score4;
+        totalScoreResult.innerText = `${totalScore}점`;
+    }
+
+    function setRubricResult(elementId, score, maxScore, desc) {
+        const el = document.getElementById(elementId);
+        const isGood = score >= (maxScore * 0.8);
+        el.innerHTML = `
+            <span class="score-tag ${isGood ? 'score-good' : 'score-warn'}">
+                ${score}점 / ${maxScore}점
+            </span> 
+            <span style="font-size:0.85rem; color:#666; margin-left:8px;">${desc}</span>
+        `;
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
